@@ -1,0 +1,20 @@
+-- prepare lookup table 'dayofweek'
+-- dayofweek lookup file is available from the course website
+
+create table twitter.dayofweek (date1 string, dayofweek string)
+row format delimited
+fields terminated by '\t';
+
+load data inpath '/user/lab/dayofweek.txt'
+overwrite into table twitter.dayofweek;
+
+
+-- Find Weekend Tweets
+-- INNER JOIN
+
+create table twitter.weekend_tweets as
+select a.id, a.ts, b.dayofweek, a.lat, a.lon, a.tweet
+from twitter.full_text_ts a JOIN twitter.dayofweek b
+     ON to_date(a.ts) = b.date1 AND b.dayofweek IN ('Saturday','Sunday');
+
+Create your txt files (more than one) having each record attributes separated with a tab '\t' (tab key) and all records separated with a Line feed, '\n' (enter key).
