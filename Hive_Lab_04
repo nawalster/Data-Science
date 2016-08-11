@@ -1,0 +1,173 @@
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+-- Lab Exercises
+
+-- 1. In this lab session, we will recap what we have done so far.
+-- 2. In case you don't have the geo-tagged tweet data in hadoop, you need reload it 
+-- 3. To avoid confusion, please always include database name 'twest.' as part of your hive table name. If you don't specify the database name while you're not in the twitter database (use twest), you will not find the  the corresponding table e.g.,  twest.fulltext. By default you're in a database called "default".
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+
+
+--------------------------------------
+--------------------------------------
+-- Working with Linux files
+--------------------------------------
+--------------------------------------
+
+-- switch to user hdfs 
+su hdfs
+
+-- go to /home directory
+cd /home
+
+-- create a new subdirectory called "recap"
+mkdir recap
+
+-- list the contents of recap
+ll recap (ls recap)
+
+-- load the geo-tagged tweet data into the recap directory you have just created on your access node using FileZilla or a similar sftp application.
+
+-- go to recap and list the contents again
+cd recap
+ll (ls)
+
+-- make a directory named recap under /user on HDFS
+hadoop fs -mkdir /user/recap
+
+-- copy your data file to HDFS
+hadoop fs -put /home/recap/full_text.txt /user/recap/full_text.txt
+
+-- make a second copy of the same file under a different name
+hadoop fs -put /home/recap/full_text.txt /user/recap/full_text_copy.txt
+
+--------------------------------------
+--------------------------------------
+-- Working with Hive Database
+--------------------------------------
+--------------------------------------
+
+-- list available databases
+show databases;
+
+-- use 'dfs -ls' command in hive to list HDFS directory
+-- hive databases are just HDFS directories
+-- each hive table is an HDFS file
+
+dfs -ls /apps/hive/warehouse;
+
+-- create a database for today's exercise named twest
+create database twest;
+
+-- check if twest database has been listed
+show databases;
+
+-- change to the twest database
+use twest;
+
+-- show database details
+describe database extended twest;
+
+-- list HDFS hive directory again. Mark the difference
+dfs -ls /apps/hive/warehouse;
+
+-- Question: What is located inside the new twest.db directory?
+
+
+--------------------------------------
+--------------------------------------
+-- Working with Internal Hive Tables
+--------------------------------------
+--------------------------------------
+
+-- create an empty fulltext hive INTERNAL table 
+create table twest.fulltext (                                                   
+          id string, 
+          ts string, 
+          lat_lon string,
+          lat string, 
+          lon string, 
+          tweet string)
+row format delimited 
+fields terminated by '\t' ; 
+
+-- list HDFS hive directory of your database
+dfs -ls /apps/hive/warehouse/twest.db;
+
+
+-- What did you have in the access node again?
+dfs -ls /user/recap;
+
+-- load data from full_text.txt into the twest.fulltext INTERNAL table
+load data inpath '/user/recap/full_text.txt'  
+overwrite into table twest.fulltext;
+
+
+-- show table schema
+describe twest.fulltext;
+
+-- show extended table detail
+describe extended twest.fulltext;
+
+-- display contents of fulltext table
+select * from twest.fulltext limit 5;
+
+-- use 'dfs -ls' command in hive to list HDFS directory
+-- you should see a directory call "twest.db"
+-- hive databases are just HDFS directories
+-- each hive table is an HDFS file
+
+dfs -ls /apps/hive/warehouse;
+dfs -ls /apps/hive/warehouse/twest.db;
+
+-- how about your original data file on HDFS?
+dfs -ls /user/recap;
+
+
+--------------------------------------
+--------------------------------------
+-- Working with External Hive Tables
+--------------------------------------
+--------------------------------------
+
+-- create and load tweet data as EXTERNAL table
+drop table twest.ext_fulltext;
+create external table twest.ext_fulltext (                                                   
+          id string, 
+          ts string, 
+          lat_lon string,
+          lat string, 
+          lon string, 
+          tweet string)
+row format delimited 
+fields terminated by '\t'
+location '/user/recap/'; 
+
+-- display contents of ext_fulltext table
+select * from twest.ext_fulltext limit 5;
+
+-- list HDFS directory
+dfs -ls /apps/hive/warehouse/twest.db;
+
+-- how about your original data file on HDFS?
+dfs -ls /user/recap;
+
+--------------------------------------
+--------------------------------------
+-- Exercise
+--------------------------------------
+--------------------------------------
+
+-- Find hour of the day when most number of tweets were generated by users on March 6, 2010. For example, the hour of 12:00AM ~ 1:00AM saw most number of tweets tweeted on new years day
+
+select hour(ts), count(*) as cnt 
+from twitter.full_text_ts
+where to_date(ts) = '2010-03-06'
+group by hour(ts)
+order by cnt desc;
+
+-- Find top 10 mentions (@xxxxxxx).
+
+select t.patterns, count(*) as cnt from (select id, ts, regexp_extract(lower(tweet), '(.*)@user_(\\S{8})([:| ])(.*)',2) as patterns
+from twitter.full_text_ts)  t group by t.patterns order by cnt desc limit 10;
