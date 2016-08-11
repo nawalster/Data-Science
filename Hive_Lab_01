@@ -1,0 +1,254 @@
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+-- Programming Hive 1 - Lab Exercises
+
+-- 1. In this lab session, we will start working with HiveQL
+-- 2. In case you don't have the geo-tagged tweet data in hadoop, you need reload it 
+-- 3. To avoid confusion, please always include database name 'twitter.' as part of your hive table name. If you 
+--    don't specify the database name while you're not in the twitter database (use twitter), you will not find the
+--    the corresponding table. By default you're in a database called "default" 
+--    e.g.,  twitter.full_text
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+
+
+--------------------------------------
+--------------------------------------
+-- Working with Hive Database
+--------------------------------------
+--------------------------------------
+
+-- list available databases
+show databases;
+
+-- create a database for the twitter related analysis
+create database twitter;
+
+-- change to the twitter database
+use twitter;
+
+-- check if twitter database has been listed
+show databases;
+
+-- show database details
+describe database extended twitter;
+
+
+--------------------------------------
+--------------------------------------
+-- Working with Hive Tables
+--------------------------------------
+--------------------------------------
+
+-- create an empty full_text hive table 
+create table twitter.full_text (                                                   
+          id string, 
+          ts string, 
+          lat_lon string,
+          lat string, 
+          lon string, 
+          tweet string)
+row format delimited 
+fields terminated by '\t' ; 
+
+-- load data into the twitter.full_text table
+load data inpath '/user/lab/full_text.txt'  
+overwrite into table twitter.full_text;
+
+
+-- show table schema
+describe twitter.full_text;
+
+-- show extended table detail
+describe extended twitter.full_text;
+
+-- use 'dfs -ls' command in hive to list HDFS directory
+-- you should see a directory call "twitter.db"
+-- hive databases are just HDFS directories
+-- each hive table is an HDFS file
+
+dfs -ls /apps/hive/warehouse;
+
+
+-- display contents of full_text table
+select id, ts from twitter.full_text limit 5;
+
+
+create table twitter.full_text_2 as 
+select * 
+from twitter.full_text;
+
+
+
+--------------------------------------
+--------------------------------------
+-- Hive Functions
+--------------------------------------
+--------------------------------------
+
+-----------------
+-- DATE function
+-----------------
+
+-- cast string to timestamp start index and limit
+create table twitter.full_text_ts as
+select id, cast(concat(substr(ts,1,10), ' ', substr(ts,12,8)) as timestamp) as ts, lat, lon, tweet
+from full_text;
+
+describe twitter.full_text_ts;
+
+-- Extract year, month and day from timestamp
+select ts, unix_timestamp(ts) as unix_timestamp, to_date(ts) as date1, year(ts) as year, month(ts) as month, day(ts) as day
+from twitter.full_text_ts
+limit 5;
+
+
+
+
+-------------------
+-- STRING function
+-------------------
+select id, ts, trim(lower(tweet)) as tweet
+from twitter.full_text_ts
+limit 5;
+
+select id, ts, trim(upper(tweet)) as tweet
+from twitter.full_text_ts
+limit 5;
+
+select id, ts, length(tweet) as tweet
+from twitter.full_text_ts
+limit 5;
+
+--sentences('Hello there! How are you?') returns ( ("Hello", "there"), ("How", "are", "you") ).
+--sentences(string str, string lang, string locale)Tokenizes a string of natural language text into words and sentences, where each sentence is broken at the appropriate sentence boundary and returned as an array of words. The 'lang' and 'locale' are optional arguments. For example, sentences('Hello there! How are you?') returns ( ("Hello", "there"), ("How", "are", "you") ).
+
+select id, ts, sentences(tweet) as tokens
+from twitter.full_text_ts
+limit 5;
+
+
+
+-- Find twitter handles mentioned in a tweet 
+-- NOTE that the regex in this query will only find the first mention. It doesn't work properly when the tweet contains more than 1 mentions. How do we capture all the mentions in a tweet? 
+
+select id, ts, regexp_extract(lower(tweet), '(.*)@user_(\\S{8})([:| ])(.*)',2) as patterns
+from twitter.full_text_ts
+limit 5;
+
+
+
+-- Finding top 10 users who tweet long tweets
+-- maximum tweet length is 140 characters.. but output of this query shows tweets with length > 140
+select t.id, t.len, t.tweet
+from (select id, tweet, length(tweet) as len from twitter.full_text_ts) t 
+order by len desc
+limit 10;
+
+
+-- removing the mentions will improve the results 
+--regexp_replace("foobar", "oo", "") returns 'fbar.'
+select t.id, t.len, t.trimmed_tweet
+from (select id, regexp_replace(tweet, "@USER_\\w{8}", "") as trimmed_tweet, length(regexp_replace(tweet, "@USER_\\w{8}", " ")) as len from twitter.full_text_ts) t 
+order by len desc
+limit 10;
+
+
+
+------------------------
+-- CONDITIONAL function
+------------------------
+-- Find users who like to tw-eating
+-- not a great example. just for you to practice case when conditional function
+
+select * from
+    (select id, ts, case when hour(ts) = 7 then 'breakfast'
+                        when hour(ts) = 12 then 'lunch'
+                        when hour(ts) = 19 then 'dinner'
+                   end as tw_eating,
+           lat, lon
+    from twitter.full_text_ts) t
+where t.tw_eating in ('breakfast','lunch','dinner')
+limit 10;
+
+
+
+--------------------------------------
+--------------------------------------
+-- WHERE Clause - Filtering Data
+--------------------------------------
+--------------------------------------
+
+-- Find all tweets by a user
+-- Hive is very slow for this type of query because for even one record it still scans through the entire table
+-- this is because MapReduce works in a streaming fashion
+-- for fast retrieval, you can either use relational database or new technologies such as Apache Impala (Cloudera)
+
+select id, ts, lat, lon, tweet
+from twitter.full_text_ts   
+where id='USER_ae406f1d'; 
+
+
+-- Calculate # of tweets on a specific date
+
+select *
+from twitter.full_text_ts
+where to_date(ts) = '2010-03-07'
+limit 5; 
+
+select count(*)
+from twitter.full_text_ts
+where to_date(ts) = '2010-03-07'
+
+-- Find all tweets tweeted from NYC vicinity (using bounding box -74.2589, 40.4774, -73.7004, 40.9176)
+-- The square bounding box won't give us very accurate results. We may end up retrieving tweets in New Jersey as well.
+-- A better approach is to use geo function plugins for hive. We will re-visit this when we introduce Pig
+
+select distinct lat, lon 
+from twitter.full_text_ts
+where lat > 40.4774 and lat < 40.9176 and
+      lon > -74.2589 and lon < -73.7004
+limit 20;
+
+
+--------------------------------------
+--------------------------------------
+-- GROUP BY - Aggregation Functions
+The SQL GROUP BY clause is used in collaboration with the SELECT statement to arrange identical data into groups.
+--------------------------------------
+--------------------------------------
+
+-- Calculate # of tweets per user
+
+create table twitter.tweets_per_user as
+select id, COUNT(*) as cnt
+from twitter.full_text_ts
+group by id;
+
+
+--------------------------------------
+--------------------------------------
+-- ORDER BY
+--------------------------------------
+--------------------------------------
+
+-- Find top 10 tweeters in NYC
+select id, count(*) as cnt
+from twitter.full_text_ts
+where lat > 40.4774 and lat < 40.9176 and
+      lon > -74.2589 and lon < -73.7004
+group by id
+order by cnt desc
+limit 15;
+
+--------------------------------------
+--------------------------------------
+-- DISTINCT 
+--------------------------------------
+--------------------------------------
+
+-- Find # of distinct days this dataset cover
+
+select count(distinct to_date(ts))
+from twitter.full_text_ts;
+
