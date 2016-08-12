@@ -1,1 +1,107 @@
 
+#import file and replace empty cells/white space with NA
+mtn<-read.csv(file="https://raw.githubusercontent.com/ryanarbow/lessonprojects/master/rollingsales_manhattan.csv", stringsAsFactors = TRUE,header=TRUE, sep=",", skip=4, strip.white=T, na.strings=c("NA",""," "))
+
+#make column names lower class
+names(mtn)<-tolower(names(mtn))
+
+#exploration
+#check for NA and zero in variables
+str(mtn)
+head(mtn)
+nrow(mtn)
+sapply(mtn,class)
+
+na_count <-function (x) sapply(x, function(y) sum(is.na(y)))
+na_count(mtn)                               
+zero_count<-function (x) sapply(x, function(y) sum(y==0))
+zero_count(mtn)
+
+
+#clean/format data with regular expressions | remove $/comma/convert back to numeric
+mtn$sale.price<- as.numeric(gsub("[^[:digit:]]","",mtn$sale.price))
+
+mtn$land.square.feet <- as.numeric(gsub("[^[:digit:]]","", mtn$land.square.feet))
+mtn$gross.square.feet <- as.numeric(gsub("[^[:digit:]]","", mtn$gross.square.feet))
+mtn$total.units<- as.numeric(gsub("[^[:digit:]]","",mtn$total.units))
+mtn$residential.units<- as.numeric(gsub("[^[:digit:]]","",mtn$residential.units))
+mtn$commercial.units<- as.numeric(gsub("[^[:digit:]]","",mtn$commercial.units))
+
+mtn$sale.date <- as.Date(mtn$sale.date, format="%m/%d/%y")
+
+mtn$neighborhood <- as.character(mtn$neighborhood)
+mtn$borough<-as.factor(mtn$borough)
+mtn$zip.code <- as.character(mtn$zip.code)
+mtn$tax.class.at.time.of.sale<-as.factor(mtn$tax.class.at.time.of.sale)
+mtn$apartment.number<-as.character(mtn$apartment.number)
+
+
+#convert year.built=0 to NA
+mtn$year.built[which(mtn$year.built==0)]<-NA
+
+
+#remove easement column since sum NA is equal to total number of rows in dataset
+sum(is.na(mtn$ease.ment))
+mtn$ease.ment<- NULL
+
+#remove rows with 4 or more NA values
+MissingVal <- rowSums(is.na(mtn))
+RemoveNdx <- MissingVal>4
+sum(RemoveNdx)
+
+# delete rows where sale.price==0
+sum(is.na(mtn$sale.price)) #check for NA
+sum(mtn$sale.price==0)
+mtn.clean<-mtn[mtn$sale.price>0,]
+
+
+#delete rows with 4 or more zero values
+mtn.clean$zero_count<- rowSums(mtn.clean == 0, na.rm=TRUE)
+mtn.clean2<-mtn.clean[mtn.clean$zero_count<4,]
+mtn.clean2$zero_count<-NULL
+
+
+#fill in gross.square.feet=0 using total.units for each corresponding total.units, using mean of gross.square.feet!=0 for the corresponding total.units
+
+mean1<-0
+for (n in 1:max(mtn.clean2$total.units))
+{
+  mean1<-mean(mtn.clean2$gross.square.feet[mtn.clean2$total.units==n & mtn.clean2$gross.square.feet != 0])
+  mtn.clean2$gross.square.feet[mtn.clean2$total.units==n & mtn.clean2$gross.square.feet==0] <-round(mean1, digits=0)
+}
+
+#convert land.square.feet=NA to 0; for the next function to work
+mtn.clean2$land.square.feet[is.na(mtn.clean2$land.square.feet)]<-0
+
+#fill in land.square.feet=0 using total.units for each corresponding total.units, using mean of land.square.feet!=0 for the corresponding total.units
+
+mean2<-0
+for (n in 1:max(mtn.clean2$total.units))
+{
+  mean2<-mean(mtn.clean2$land.square.feet[mtn.clean2$total.units==n & mtn.clean2$land.square.feet != 0])
+  mtn.clean2$land.square.feet[mtn.clean2$total.units==n & mtn.clean2$land.square.feet==0] <-round(mean2, digits=0)
+}
+
+#delete the only record where land.square.feet=NA
+mtn.clean3<-mtn.clean2[!is.na(mtn.clean2$land.square.feet),]
+
+
+#check/delete duplicated rows
+
+sum(duplicated(mtn.clean3==T))
+mtn.clean4<-mtn.clean3[!duplicated(mtn.clean3),]
+
+#check/delete rows where total.units!=residential.units+commercial.units
+mtn.clean5<-mtn.clean4
+mtn.clean5$total.units.2<-mtn.clean5$residential.units+mtn.clean5$commercial.units
+sum(mtn.clean5$total.units==mtn.clean5$total.units.2)
+mtn.clean6<-mtn.clean5[mtn.clean5$total.units==mtn.clean5$total.units.2,]
+mtn.clean6$total.units.2<-NULL
+
+#delete outliers
+mtn.clean7<-mtn.clean6[mtn.clean6$sale.price>10000 & mtn.clean6$sale.price<100000000,]
+
+#export to excel
+write.csv(mtn.clean4, file="rollingsales_manhattan_clean.csv")
+
+
