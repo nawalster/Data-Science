@@ -1,1 +1,115 @@
 
+```{r}
+install.packages("ggplot2")
+install.packages("data.table")
+library(ggplot2)
+library(data.table)
+```
+
+```{r}
+ #import file
+mtn_clean <- read.csv("rollingsales_manhattan_clean.csv", stringsAsFactors = FALSE,header=TRUE, sep=",")
+str(mtn_clean)
+
+mtn_clean$sale.date <- as.Date(mtn_clean$sale.date)
+
+    #clean some more
+mtn2 <- mtn_clean[which(mtn_clean$sale.price<=15000000),] #remove homes with sale price greater than $15 million
+mtn3 <- mtn2[which(mtn2$gross.square.feet<400000&mtn2$gross.square.feet>0),] #remove homes greater that 400000 gross sqr.ft
+mtn3<-mtn3[which(mtn3$year.built>=1900),] #homes built after 1900
+```
+
+```{r}
+   # Categorize sales dates by month and weekday
+
+mtn3$sale.month <- as.Date(cut(mtn3$sale.date,
+                         breaks = "month")) #use
+
+mtn3$sale.day <- format(mtn3$sale.date, "%a") #use
+
+mtn3$sale.day <- factor(mtn3$sale.day, levels= c("Mon", "Tue", "Wed", "Thu", "Fri","Sat","Sun")) #use
+
+mtn4<-mtn3
+```
+
+```{r}
+# 1st visualization. Average house sale prices according to year built (find average)
+  #using library(data.table)
+mtn5<-data.table(year.built=mtn4$year.built, sale.price=mtn4$sale.price)
+mtn6<-mtn5[, mean(sale.price), by = year.built]
+
+
+  #plot avg price by year built
+
+ggplot(mtn6, aes(x=year.built, y=V1/1000))+ geom_point() +geom_smooth(span=0.3) +
+  ylab("Average Sale Price  (1,000s)") + xlab("Year Built") + ggtitle("Avg Sale Price by Year Built") ##USE THIS
+```
+
+```{r}
+#2nd visualization. Total Sale Volume (number of sales of homes) by Month/year 
+
+ggplot(data = mtn4,aes(sale.month, sale.price)) + stat_summary(fun.y = length, geom = "bar") + 
+  ylab("Count") + xlab("Month")+ggtitle("Total Sales Volume per Month") ##USE THIS
+  
+```
+
+```{r}
+#3rd visualization. Plot total Sale Volume (number of sales of homes) by Day of Week (Combine both years)
+
+ggplot(data = mtn4,aes(sale.day, sale.price)) + stat_summary(fun.y = length, geom = "bar") + 
+  ylab("Count") + xlab("Day of Week") + ggtitle("Total Sales Volume per Day of Week") ##USE THIS
+```
+
+```{r}
+#4. Year Built according to neighbourhoods (to find which neighbourhoods had newest/oldest homes)
+    #using library(data.table)
+
+    #find average year.built
+
+mtn7<-data.table(neighborhood=mtn4$neighborhood, year.built=mtn4$year.built)
+mtn8<-mtn7[, mean(year.built), by = neighborhood]
+    
+#plot avg year built across neighborhoods
+ggplot(mtn8, aes(x=neighborhood, y=V1))+ geom_point() +geom_smooth(span=0.3) +
+  ylab("Avg Year Built") + xlab("neighborhood") + ggtitle("Avg Year Built Across Neighborhoods")+
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) ##USE THIS
+```
+
+Avg price over time, categorized by neighborhoods
+
+```{r}
+####################################################Q2######################################################
+
+## Linear Regression: Fitting the Model
+
+plot(mtn4$land.square.feet, mtn4$sale.price)
+
+## Linear Regression: Fitting the Model
+mtn_ulm <- lm(sale.price~land.square.feet, data=mtn4) 
+mtn_ulm
+
+    #formula: 
+       # sale.price=5171444-320*(land.square.feet)
+```
+
+```{r}
+##############################################Q3#####################################################
+
+
+## Multivariate Linear Regression
+mtn_mlr <- lm(sale.price~gross.square.feet+land.square.feet+total.units+year.built, data=mtn4) 
+mtn_mlr
+
+    #formula: 
+         # sale.price= 0.0000001431 - 0.3376*(gross.square.feet) - 0.9156*(land.square.feet) 
+          #              +0.0009953*(tota.units) - 0.004948*(year.built)
+
+```
+
+```{r}
+######################################Q4##############################################
+
+cor(mtn4[,c("sale.price","total.units","year.built","gross.square.feet")])
+
+```
+
