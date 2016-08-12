@@ -1,1 +1,98 @@
 
+
+---
+install.packages("class")
+install.packages("gmodels")
+install("corrplot")
+library(class)
+library(gmodels)
+library(corrplot)
+
+```{r}
+wine<- read.csv(url("http://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv"), stringsAsFactors=FALSE, sep=";", header=TRUE)
+```
+
+```{r}
+head(wine)
+tail(wine)
+str(wine)
+sapply(wine, class)
+
+```
+
+
+Check data characteristics. Is there missing data?
+```{r}
+na_count <-function (x) sapply(x, function(y) sum(is.na(y)))
+na_count(wine)
+
+#No missing data
+
+```
+
+What is the correlation between attributes other than wine quality?
+```{r}
+
+cor(wine[,1:11])
+pairs(wine[,1:11])
+corrplot(cor(wine), method="circle")
+```
+
+Graph the distribution of wine quality.
+```{r}
+hist(wine$quality)
+barplot(table(wine$quality))
+
+#As we can see, there are a lot of wines with a quality of 6 as compared to the others. The dataset description states there are a lot more normal wines than excellent or poor ones.
+
+```
+
+Reduce the levels of rating for quality to three levels as high, medium and low.High(7-10);Medium(6);Low(1-5).
+```{r}
+
+wine$quality_rating <- cut(
+  wine$quality, breaks=c(1,5,6,10), labels = c("Low", "Medium", "High"))
+
+table(wine$quality_rating)
+```
+
+Normalize the dataset
+```{r}
+normalize <- function(x) {
+               return ((x - min(x)) / (max(x) - min(x))) }
+
+wine_n <- as.data.frame(lapply(wine[1:11], normalize))
+
+summary(wine_n$fixed.acidity)
+
+```
+
+
+ Divide the data to training and testing groups 70/30
+```{r}
+
+wine_indx <- sample(nrow(wine_n), floor(nrow(wine_n) * 0.7))
+
+wine_train <- wine_n[wine_indx, ]
+wine_test <- wine_n[-wine_indx, ]
+
+```
+
+
+Use KNN algorithm tp predict the quality of wine using its attributes
+```{r}
+wine_train_labels <- wine[wine_indx, 13]
+wine_test_labels <- wine[-wine_indx, 13]
+
+wine_test_pred <- knn(train = wine_train, test = wine_test,cl = wine_train_labels, k=5)
+```
+
+
+Evaluate the model performance
+```{r}
+CrossTable(x=wine_test_labels, y=wine_test_pred, prop.chisq=FALSE)
+
+#For k=5, test data misclassification rate is lowest, when all predictors are being used.
+
+```
+
