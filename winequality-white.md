@@ -186,13 +186,13 @@ cor(wine[,1:11])
 pairs(wine[,1:11])
 ```
 
-![](assignment3_github_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](assignment3_github_files/figure-markdown_github/graph01-1.png)
 
 ``` r
 corrplot(cor(wine), method="circle")
 ```
 
-![](assignment3_github_files/figure-markdown_github/unnamed-chunk-5-2.png)
+![](assignment3_github_files/figure-markdown_github/graph02-1.png)
 
 Graph the distribution of wine quality.
 ---------------------------------------
@@ -201,13 +201,13 @@ Graph the distribution of wine quality.
 hist(wine$quality)
 ```
 
-![](assignment3_github_files/figure-markdown_github/unnamed-chunk-6-1.png)
+![](assignment3_github_files/figure-markdown_github/graph03-1.png)
 
 ``` r
 barplot(table(wine$quality))
 ```
 
-![](assignment3_github_files/figure-markdown_github/unnamed-chunk-6-2.png)
+![](assignment3_github_files/figure-markdown_github/graph04-1.png)
 
 As we can see, there are a lot of wines with a quality of 6 as compared to the others. The dataset description states there are a lot more normal wines than excellent or poor ones.
 
@@ -286,23 +286,23 @@ CrossTable(x=wine_test_labels, y=wine_test_pred, prop.chisq=FALSE)
     ##                  | wine_test_pred 
     ## wine_test_labels |       Low |    Medium |      High | Row Total | 
     ## -----------------|-----------|-----------|-----------|-----------|
-    ##              Low |       315 |       167 |        27 |       509 | 
-    ##                  |     0.619 |     0.328 |     0.053 |     0.346 | 
-    ##                  |     0.647 |     0.254 |     0.083 |           | 
-    ##                  |     0.214 |     0.114 |     0.018 |           | 
+    ##              Low |       301 |       149 |        32 |       482 | 
+    ##                  |     0.624 |     0.309 |     0.066 |     0.328 | 
+    ##                  |     0.622 |     0.231 |     0.094 |           | 
+    ##                  |     0.205 |     0.101 |     0.022 |           | 
     ## -----------------|-----------|-----------|-----------|-----------|
-    ##           Medium |       155 |       372 |       117 |       644 | 
-    ##                  |     0.241 |     0.578 |     0.182 |     0.438 | 
-    ##                  |     0.318 |     0.566 |     0.359 |           | 
-    ##                  |     0.105 |     0.253 |     0.080 |           | 
+    ##           Medium |       169 |       375 |       123 |       667 | 
+    ##                  |     0.253 |     0.562 |     0.184 |     0.454 | 
+    ##                  |     0.349 |     0.582 |     0.360 |           | 
+    ##                  |     0.115 |     0.255 |     0.084 |           | 
     ## -----------------|-----------|-----------|-----------|-----------|
-    ##             High |        17 |       118 |       182 |       317 | 
-    ##                  |     0.054 |     0.372 |     0.574 |     0.216 | 
-    ##                  |     0.035 |     0.180 |     0.558 |           | 
-    ##                  |     0.012 |     0.080 |     0.124 |           | 
+    ##             High |        14 |       120 |       187 |       321 | 
+    ##                  |     0.044 |     0.374 |     0.583 |     0.218 | 
+    ##                  |     0.029 |     0.186 |     0.547 |           | 
+    ##                  |     0.010 |     0.082 |     0.127 |           | 
     ## -----------------|-----------|-----------|-----------|-----------|
-    ##     Column Total |       487 |       657 |       326 |      1470 | 
-    ##                  |     0.331 |     0.447 |     0.222 |           | 
+    ##     Column Total |       484 |       644 |       342 |      1470 | 
+    ##                  |     0.329 |     0.438 |     0.233 |           | 
     ## -----------------|-----------|-----------|-----------|-----------|
     ## 
     ## 
