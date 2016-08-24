@@ -186,13 +186,13 @@ cor(wine[,1:11])
 pairs(wine[,1:11])
 ```
 
-![](winequality_files/figure-markdown_github/graph01-1.png)
+![](winegraph01.png)
 
 ``` r
 corrplot(cor(wine), method="circle")
 ```
 
-![](winequality_files/figure-markdown_github/graph02-1.png)
+![](winegraph02.png)
 
 Graph the distribution of wine quality.
 ---------------------------------------
@@ -201,13 +201,13 @@ Graph the distribution of wine quality.
 hist(wine$quality)
 ```
 
-![](winequality_files/figure-markdown_github/graph03-1.png)
+![](winegraph03.png)
 
 ``` r
 barplot(table(wine$quality))
 ```
 
-![](winequality_files/figure-markdown_github/graph04-1.png)
+![](winegraph04.png)
 
 As we can see, there are a lot of wines with a quality of 6 as compared to the others. The dataset description states there are a lot more normal wines than excellent or poor ones.
 
