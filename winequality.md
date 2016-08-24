@@ -186,7 +186,7 @@ cor(wine[,1:11])
 pairs(wine[,1:11])
 ```
 
-![](winequality_files/figure-markdown_github/graph01-1.png)
+![](Data-Science/graph01.png)
 
 ``` r
 corrplot(cor(wine), method="circle")
