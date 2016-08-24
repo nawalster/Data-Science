@@ -1,6 +1,6 @@
 # Data Science 
 ## Read Me
-This is a set of notes compiled during my data science learning journey.
+This is a set of notes/exercises compiled during my data science learning journey.
 
 Roadmap:
 - Getting and Cleaning Data
